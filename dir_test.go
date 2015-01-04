@@ -8,10 +8,7 @@ import (
 )
 
 func Test_OpenAndReadFile(t *testing.T) {
-	fs, err := New(testData)
-	assert.NoError(t, err)
-
-	f, err := fs.Open("readme.txt")
+	f, err := testFileSystem.Open("readme.txt")
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -25,32 +22,19 @@ func Test_OpenAndReadFile(t *testing.T) {
 }
 
 func Test_NotFound(t *testing.T) {
-	fs, err := New(testData)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	f, err := fs.Open("not_found.txt")
+	f, err := testFileSystem.Open("not_found.txt")
 	assert.EqualError(t, err, "open not_found.txt: file does not exist")
 	assert.Nil(t, f)
 }
 
 func Test_EscapingSandbox(t *testing.T) {
-	fs, err := New(testData)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	f, err := fs.Open("../../readme.txt")
+	f, err := testFileSystem.Open("../../readme.txt")
 	assert.EqualError(t, err, "open ../../readme.txt: file does not exist")
 	assert.Nil(t, f)
 }
 
 func Test_HardRoot(t *testing.T) {
-	fs, err := New(testData)
-	assert.NoError(t, err)
-
-	f, err := fs.Open("/readme.txt")
+	f, err := testFileSystem.Open("/readme.txt")
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -64,12 +48,7 @@ func Test_HardRoot(t *testing.T) {
 }
 
 func Test_HandlesDirs(t *testing.T) {
-	fs, err := New(testData)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	f, err := fs.Open("subdir/file.txt")
+	f, err := testFileSystem.Open("subdir/file.txt")
 	if !assert.NoError(t, err) {
 		return
 	}
