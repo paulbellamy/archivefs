@@ -21,7 +21,7 @@ func Test_OpenAndReadFile(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, "This archive contains some text files.", string(body))
+	assert.Equal(t, "This archive contains some text files.\n", string(body))
 }
 
 func Test_NotFound(t *testing.T) {
@@ -60,7 +60,7 @@ func Test_HardRoot(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, "This archive contains some text files.", string(body))
+	assert.Equal(t, "This archive contains some text files.\n", string(body))
 }
 
 func Test_HandlesDirs(t *testing.T) {
@@ -78,5 +78,5 @@ func Test_HandlesDirs(t *testing.T) {
 	if !assert.NoError(t, err) {
 		return
 	}
-	assert.Equal(t, "sub-file", string(body))
+	assert.Equal(t, "sub-file\n", string(body))
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,7 +15,7 @@ import (
 func main() {
 	var err error
 	flags := flag.NewFlagSet("httpdir-compiler", flag.ExitOnError)
-	exportVar := flags.String("export-var", "Dir", "Name of the exported var. First character must be uppercase.")
+	exportVar := flags.String("export-var", "Dir", "Name of the exported var.")
 	pkg := flags.String("package", "", "Name of the generated package. Default is the directory name of the target.")
 	target := flags.String("o", "", "Name of a file to write the output to. Default is stdout.")
 	flags.Parse(os.Args[1:])
@@ -37,8 +38,6 @@ func main() {
 
 	if len(*exportVar) < 1 {
 		exit(errors.New("export-var cannot be blank"))
-	} else if (*exportVar)[0:1] != strings.ToUpper((*exportVar)[0:1]) {
-		exit(errors.New("export-var must begin with an uppercase character"))
 	}
 
 	// TODO: Gzip it instead of string
@@ -82,25 +81,39 @@ func tarDir(source string) (string, error) {
 	archive := tar.NewWriter(buffer)
 
 	// Add some files to the archive.
-	var files = []struct {
-		Name, Body string
-	}{
-		{"readme.txt", "This archive contains some text files."},
-		{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
-		{"todo.txt", "Get animal handling licence."},
-		{"subdir/file.txt", "sub-file"},
-	}
-	for _, file := range files {
+	err := filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		fmt.Println("Adding:", cleanPath(strings.TrimPrefix(path, source)))
 		header := &tar.Header{
-			Name: file.Name,
-			Size: int64(len(file.Body)),
+			Name:    cleanPath(strings.TrimPrefix(path, source)),
+			Size:    info.Size(),
+			Mode:    int64(info.Mode().Perm()),
+			ModTime: info.ModTime(),
 		}
 		if err := archive.WriteHeader(header); err != nil {
-			return "", err
+			return err
 		}
-		if _, err := archive.Write([]byte(file.Body)); err != nil {
-			return "", err
+		if _, err := io.Copy(archive, file); err != nil {
+			return err
 		}
+
+		return nil
+	})
+	if err != nil {
+		return "", err
 	}
 
 	// Make sure to check the error on Close.
@@ -109,4 +122,8 @@ func tarDir(source string) (string, error) {
 	}
 
 	return buffer.String(), nil
+}
+
+func cleanPath(path string) string {
+	return filepath.Clean(strings.TrimPrefix(path, fmt.Sprintf("%c", filepath.Separator)))
 }
