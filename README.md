@@ -8,6 +8,7 @@ Fetch the library:
 
 ```bash
 go get github.com/paulbellamy/tarfs
+go get github.com/paulbellamy/tarfs/cmd/tarfs
 ```
 
 In your code, add the invocation:
