@@ -2,46 +2,13 @@ package tarfs
 
 import (
 	"archive/tar"
-	"bytes"
-	"fmt"
+
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
-
-func Must(fs http.FileSystem, err error) http.FileSystem {
-	if err != nil {
-		panic(err)
-	}
-	return fs
-}
-
-// Read the tar contents and rebuild the file system
-func New(content string) (http.FileSystem, error) {
-	// Open the tar archive for reading.
-	archive := tar.NewReader(strings.NewReader(content))
-
-	// Iterate through the files in the archive.
-	for {
-		header, err := archive.Next()
-		if err == io.EOF {
-			// end of tar archive
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		fmt.Printf("Contents of %s:\n", header.Name)
-		if _, err := io.Copy(os.Stdout, archive); err != nil {
-			return nil, err
-		}
-		fmt.Println()
-	}
-	return nil, nil
-}
 
 type TarDir struct {
 	dir    *TarDir // parent Dir
@@ -50,8 +17,24 @@ type TarDir struct {
 	files  map[string]*TarFile
 }
 
-func (fs *TarDir) Open(name string) (http.File, error) {
-	return nil, nil
+func cleanPath(path string) string {
+	clean := filepath.Clean(path)
+	if filepath.IsAbs(clean) {
+		return clean[1:]
+	} else {
+		return clean
+	}
+}
+
+func (td *TarDir) Open(name string) (http.File, error) {
+	if f, ok := td.files[cleanPath(name)]; ok {
+		return f.NewReader(), nil
+	}
+	return nil, &os.PathError{
+		Op:   "open",
+		Path: name,
+		Err:  os.ErrNotExist,
+	}
 }
 
 // base name of the dir
@@ -134,47 +117,4 @@ func (tdi *TarDirInfo) IsDir() bool {
 // underlying data source (can return nil)
 func (tdi *TarDirInfo) Sys() interface{} {
 	return nil
-}
-
-type TarFile struct {
-	dir    *TarDir
-	header *tar.Header
-	body   []byte
-}
-
-func (tf *TarFile) Stat() (os.FileInfo, error) {
-	return nil, nil
-}
-
-// Makes a new reader into this file
-func (tf *TarFile) NewReader() *TarFileReader {
-	return &TarFileReader{
-		TarFile: tf,
-		reader:  bytes.NewReader(tf.body),
-	}
-}
-
-type TarFileReader struct {
-	*TarFile
-	reader io.ReadSeeker
-}
-
-func (tfr *TarFileReader) Read(p []byte) (n int, err error) {
-	return tfr.reader.Read(p)
-}
-
-func (tfr *TarFileReader) Close() error {
-	return nil
-}
-
-func (tfr *TarFileReader) Readdir(count int) ([]os.FileInfo, error) {
-	return tfr.TarFile.dir.Readdir(count)
-}
-
-func (tfr *TarFileReader) Seek(offset int64, whence int) (int64, error) {
-	return tfr.reader.Seek(offset, whence)
-}
-
-func (tfr *TarFileReader) Stat() (os.FileInfo, error) {
-	return tfr.TarFile.Stat()
 }

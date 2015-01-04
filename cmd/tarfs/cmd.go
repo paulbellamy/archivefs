@@ -88,6 +88,7 @@ func tarDir(source string) (string, error) {
 		{"readme.txt", "This archive contains some text files."},
 		{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
 		{"todo.txt", "Get animal handling licence."},
+		{"subdir/file.txt", "sub-file"},
 	}
 	for _, file := range files {
 		header := &tar.Header{
