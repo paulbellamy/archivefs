@@ -15,9 +15,9 @@ func decodeTar(r io.Reader) (http.FileSystem, error) {
 	// Open the tar archive for reading.
 	archive := tar.NewReader(r)
 
-	root := &TarDir{
-		dirs:  map[string]*TarDir{},
-		files: map[string]*TarFile{},
+	root := &Dir{
+		dirs:  map[string]*Dir{},
+		files: map[string]*File{},
 	}
 
 	// Iterate through the files in the archive.
@@ -34,8 +34,8 @@ func decodeTar(r io.Reader) (http.FileSystem, error) {
 		if err != nil {
 			return nil, err
 		}
-		root.files[header.Name] = &TarFile{
-			header: header,
+		root.files[header.Name] = &File{
+			header: header.FileInfo(),
 			body:   body,
 		}
 	}

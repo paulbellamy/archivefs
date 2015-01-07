@@ -1,8 +1,6 @@
 package archivefs
 
 import (
-	"archive/tar"
-
 	"io"
 	"net/http"
 	"os"
@@ -10,11 +8,11 @@ import (
 	"time"
 )
 
-type TarDir struct {
-	dir    *TarDir // parent Dir
-	header *tar.Header
-	dirs   map[string]*TarDir
-	files  map[string]*TarFile
+type Dir struct {
+	dir    *Dir // parent Dir
+	header os.FileInfo
+	dirs   map[string]*Dir
+	files  map[string]*File
 }
 
 func cleanPath(path string) string {
@@ -26,9 +24,9 @@ func cleanPath(path string) string {
 	}
 }
 
-func (td *TarDir) Open(name string) (http.File, error) {
+func (td *Dir) Open(name string) (http.File, error) {
 	if f, ok := td.files[cleanPath(name)]; ok {
-		return f.NewReader(), nil
+		return f.NewReader()
 	}
 	return nil, &os.PathError{
 		Op:   "open",
@@ -38,12 +36,12 @@ func (td *TarDir) Open(name string) (http.File, error) {
 }
 
 // base name of the dir
-func (td *TarDir) Name() string {
-	return filepath.Base(td.header.Name)
+func (td *Dir) Name() string {
+	return filepath.Base(td.header.Name())
 }
 
 // TODO: Subsequent calls to this should yield further FileInfos, as per os.File
-func (fs *TarDir) Readdir(count int) ([]os.FileInfo, error) {
+func (fs *Dir) Readdir(count int) ([]os.FileInfo, error) {
 	var results []os.FileInfo
 	var added int
 	for _, dir := range fs.dirs {
@@ -80,41 +78,41 @@ func (fs *TarDir) Readdir(count int) ([]os.FileInfo, error) {
 	return results, eof
 }
 
-func (tfr *TarDir) Stat() (os.FileInfo, error) {
-	return &TarDirInfo{TarDir: tfr}, nil
+func (tfr *Dir) Stat() (os.FileInfo, error) {
+	return &DirInfo{Dir: tfr}, nil
 }
 
-type TarDirInfo struct {
-	*TarDir
+type DirInfo struct {
+	*Dir
 }
 
 // base name of the dir
-func (tdi *TarDirInfo) Name() string {
-	return tdi.TarDir.Name()
+func (tdi *DirInfo) Name() string {
+	return tdi.Dir.Name()
 }
 
 // length in bytes for regular files; system-dependent for others
-func (tdi *TarDirInfo) Size() int64 {
+func (tdi *DirInfo) Size() int64 {
 	return 0
 }
 
 // file mode bits
 // TODO: return actual permissions
-func (tdi *TarDirInfo) Mode() os.FileMode {
-	return os.FileMode(tdi.TarDir.header.Mode)
+func (tdi *DirInfo) Mode() os.FileMode {
+	return os.FileMode(tdi.Dir.header.Mode())
 }
 
 // modification time
-func (tdi *TarDirInfo) ModTime() time.Time {
-	return tdi.TarDir.header.ModTime
+func (tdi *DirInfo) ModTime() time.Time {
+	return tdi.Dir.header.ModTime()
 }
 
 // abbreviation for Mode().IsDir()
-func (tdi *TarDirInfo) IsDir() bool {
+func (tdi *DirInfo) IsDir() bool {
 	return true
 }
 
 // underlying data source (can return nil)
-func (tdi *TarDirInfo) Sys() interface{} {
+func (tdi *DirInfo) Sys() interface{} {
 	return nil
 }

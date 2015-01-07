@@ -1,83 +1,83 @@
 package archivefs
 
 import (
-	"archive/tar"
 	"bytes"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 )
 
-type TarFile struct {
-	dir    *TarDir
-	header *tar.Header
+type File struct {
+	dir    *Dir
+	header os.FileInfo
 	body   []byte
 }
 
-func (tf *TarFile) Stat() (os.FileInfo, error) {
+func (tf *File) Stat() (os.FileInfo, error) {
 	return tf, nil
 }
 
 // base name of the file
-func (tf *TarFile) Name() string {
-	return filepath.Base(tf.header.Name)
+func (tf *File) Name() string {
+	return filepath.Base(tf.header.Name())
 }
 
 // length in bytes for regular files; system-dependent for others
-func (tf *TarFile) Size() int64 {
+func (tf *File) Size() int64 {
 	return int64(len(tf.body))
 }
 
 // file mode bits
-func (tf *TarFile) Mode() os.FileMode {
-	return os.FileMode(tf.header.Mode)
+func (tf *File) Mode() os.FileMode {
+	return os.FileMode(tf.header.Mode())
 }
 
 // modification time
-func (tf *TarFile) ModTime() time.Time {
-	return tf.header.ModTime
+func (tf *File) ModTime() time.Time {
+	return tf.header.ModTime()
 }
 
 // abbreviation for Mode().IsDir()
-func (tf *TarFile) IsDir() bool {
+func (tf *File) IsDir() bool {
 	return false
 }
 
 // underlying data source (can return nil)
-func (tf *TarFile) Sys() interface{} {
+func (tf *File) Sys() interface{} {
 	return nil
 }
 
 // Makes a new reader into this file
-func (tf *TarFile) NewReader() *TarFileReader {
-	return &TarFileReader{
-		TarFile: tf,
-		reader:  bytes.NewReader(tf.body),
-	}
+func (tf *File) NewReader() (http.File, error) {
+	return &FileReader{
+		File:   tf,
+		reader: bytes.NewReader(tf.body),
+	}, nil
 }
 
-type TarFileReader struct {
-	*TarFile
+type FileReader struct {
+	*File
 	reader io.ReadSeeker
 }
 
-func (tfr *TarFileReader) Read(p []byte) (n int, err error) {
+func (tfr *FileReader) Read(p []byte) (n int, err error) {
 	return tfr.reader.Read(p)
 }
 
-func (tfr *TarFileReader) Close() error {
+func (tfr *FileReader) Close() error {
 	return nil
 }
 
-func (tfr *TarFileReader) Readdir(count int) ([]os.FileInfo, error) {
-	return tfr.TarFile.dir.Readdir(count)
+func (tfr *FileReader) Readdir(count int) ([]os.FileInfo, error) {
+	return tfr.File.dir.Readdir(count)
 }
 
-func (tfr *TarFileReader) Seek(offset int64, whence int) (int64, error) {
+func (tfr *FileReader) Seek(offset int64, whence int) (int64, error) {
 	return tfr.reader.Seek(offset, whence)
 }
 
-func (tfr *TarFileReader) Stat() (os.FileInfo, error) {
-	return tfr.TarFile.Stat()
+func (tfr *FileReader) Stat() (os.FileInfo, error) {
+	return tfr.File.Stat()
 }
