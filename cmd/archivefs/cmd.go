@@ -40,7 +40,6 @@ func main() {
 		exit(errors.New("export-var cannot be blank"))
 	}
 
-	// TODO: Gzip it instead of string
 	content, err := tarDir(source)
 	checkErr(err)
 
@@ -72,7 +71,6 @@ type Options struct {
 }
 
 // Reads the source dir, and tars it into a big string.
-// TODO: Read the source dir instead of hardcoded data
 func tarDir(source string) (string, error) {
 	// Create a buffer to write our archive to.
 	buffer := &bytes.Buffer{}
@@ -82,23 +80,38 @@ func tarDir(source string) (string, error) {
 
 	// Add some files to the archive.
 	err := filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+		cleanedPath := cleanPath(strings.TrimPrefix(path, source))
 		if err != nil {
 			return err
 		}
 
 		if info.IsDir() {
+			if strings.HasPrefix(info.Name(), ".") {
+				fmt.Println("Skipping: ", cleanedPath)
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		if !info.Mode().IsRegular() {
 			return nil
 		}
 
 		file, err := os.Open(path)
 		if err != nil {
+			if pathError, ok := err.(*os.PathError); ok {
+				if pathError.Err.Error() == "permission denied" {
+					fmt.Println("Forbidden:", cleanedPath)
+					return nil
+				}
+			}
 			return err
 		}
 		defer file.Close()
 
-		fmt.Println("Adding:", cleanPath(strings.TrimPrefix(path, source)))
+		fmt.Println("Adding:   ", cleanedPath)
 		header := &tar.Header{
-			Name:    cleanPath(strings.TrimPrefix(path, source)),
+			Name:    cleanedPath,
 			Size:    info.Size(),
 			Mode:    int64(info.Mode().Perm()),
 			ModTime: info.ModTime(),

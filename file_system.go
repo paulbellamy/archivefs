@@ -1,10 +1,10 @@
-package tarfs
+package archivefs
 
 import (
-	"archive/tar"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -15,35 +15,29 @@ func Must(fs http.FileSystem, err error) http.FileSystem {
 	return fs
 }
 
+func CurrentExecutable(f Format) (http.FileSystem, error) {
+	path, err := exec.LookPath(os.Args[0])
+	if err != nil {
+		return nil, err
+	}
+	return FromFile(f, path)
+}
+
+func FromFile(f Format, path string) (http.FileSystem, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	return FromReader(f, file)
+}
+
 // Read the tar contents and rebuild the file system
-func New(content string) (http.FileSystem, error) {
-	// Open the tar archive for reading.
-	archive := tar.NewReader(strings.NewReader(content))
+func FromString(f Format, content string) (http.FileSystem, error) {
+	return FromReader(f, strings.NewReader(content))
+}
 
-	root := &TarDir{
-		dirs:  map[string]*TarDir{},
-		files: map[string]*TarFile{},
-	}
-
-	// Iterate through the files in the archive.
-	for {
-		header, err := archive.Next()
-		if err == io.EOF {
-			// end of tar archive
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		body, err := ioutil.ReadAll(archive)
-		if err != nil {
-			return nil, err
-		}
-		root.files[header.Name] = &TarFile{
-			header: header,
-			body:   body,
-		}
-	}
-
-	return root, nil
+func FromReader(f Format, r io.Reader) (http.FileSystem, error) {
+	return f.FromReader(r)
 }

@@ -1,4 +1,4 @@
-package tarfs
+package archivefs
 
 import (
 	"os"
