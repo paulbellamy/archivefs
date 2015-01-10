@@ -2,6 +2,7 @@ package archivefs
 
 import (
 	"archive/tar"
+	"bytes"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -35,10 +36,20 @@ func decodeTar(r io.Reader) (http.FileSystem, error) {
 			return nil, err
 		}
 		root.files[header.Name] = &File{
-			header: header.FileInfo(),
-			body:   body,
+			FileInfo:    header.FileInfo(),
+			Dir:         root,
+			NewReaderFn: newTarFileReader(body),
 		}
 	}
 
 	return root, nil
+}
+
+func newTarFileReader(body []byte) func(*File) (http.File, error) {
+	return func(file *File) (http.File, error) {
+		return &FileReader{
+			File:   file,
+			reader: bytes.NewReader(body),
+		}, nil
+	}
 }
