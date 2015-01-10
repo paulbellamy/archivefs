@@ -1,6 +1,10 @@
 # archivefs [![Build Status](https://travis-ci.org/paulbellamy/archivefs.svg)]
 
-Directory to Go net/http.FileSystem compiler. Point it at a directory, and it outputs a .go file with the contents of that directory in a net/http.FileSystem var ready to be served. Can also be used as a library if you'd rather roll your own.
+Serve Tar and Zip archives as net/http.FileSystems. Let's you compile assets into your static binary for deployment, or zip them and append it to the binary. Still a work in progress.
+
+## Documentation
+
+[http://godoc.org/github.com/paulbellamy/archivefs](http://godoc.org/github.com/paulbellamy/archivefs)
 
 ## Usage
 
