@@ -1,4 +1,4 @@
-# archivefs [![Build Status](https://travis-ci.org/paulbellamy/archivefs.svg)]
+# archivefs ![Build Status](https://travis-ci.org/paulbellamy/archivefs.svg)
 
 Serve Tar and Zip archives as net/http.FileSystems. Let's you compile assets into your static binary for deployment, or zip them and append it to the binary. Still a work in progress.
 
