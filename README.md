@@ -1,4 +1,4 @@
-# archivefs
+# archivefs [![Build Status](https://travis-ci.org/paulbellamy/archivefs.svg)]
 
 Directory to Go net/http.FileSystem compiler. Point it at a directory, and it outputs a .go file with the contents of that directory in a net/http.FileSystem var ready to be served. Can also be used as a library if you'd rather roll your own.
 
