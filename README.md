@@ -43,7 +43,7 @@ func main() {
 
 ### Usage as a library
 
-archivefs can also be used as a library, without the command. You might want to do this if you already have an archive of your assets, if your archive is compressed, or if your archive is appended to your executable file (instead of compiled into it).
+archivefs can also be used as a library, without the command. You might want to do this if you already have an archive of your assets, if your archive is compressed, or if your archive is appended to your executable file (instead of compiled into it). This is also the way to use it for Zip archives.
 
 ## Why
 
